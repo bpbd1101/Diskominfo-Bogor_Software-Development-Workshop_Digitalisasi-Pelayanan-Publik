@@ -28,9 +28,9 @@ export default function AdminDashboard() {
   useEffect(() => {
     // Check if admin is logged in
     const checkAuth = () => {
-      const isLoggedIn = localStorage.getItem("adminLoggedIn");
-      console.log("Auth check - isLoggedIn:", isLoggedIn); // Debug log
-      if (!isLoggedIn) {
+      const token = localStorage.getItem("adminToken");
+      console.log("Auth check - hasToken:", !!token);
+      if (!token) {
         console.log("Not logged in, redirecting to login"); // Debug log
         router.push("/admin/login");
         return;
@@ -65,6 +65,7 @@ export default function AdminDashboard() {
             "X-Force-Refresh": "true",
             "X-Cache-Buster": `${timestamp}-${random}`,
             "X-Request-Time": `${Date.now()}`,
+            Authorization: `Bearer ${localStorage.getItem("adminToken") || ""}`,
           },
           // Force fresh request
           cache: "no-store",
@@ -139,6 +140,7 @@ export default function AdminDashboard() {
             "Content-Type": "application/json",
             "Cache-Control": "no-cache",
             "X-Requested-With": "XMLHttpRequest",
+            Authorization: `Bearer ${localStorage.getItem("adminToken") || ""}`,
           },
           body: JSON.stringify({ status: newStatus }),
         }
@@ -191,7 +193,8 @@ export default function AdminDashboard() {
   };
 
   const handleLogout = () => {
-    localStorage.removeItem("adminLoggedIn");
+    localStorage.removeItem("adminToken");
+    localStorage.removeItem("adminProfile");
     router.push("/admin/login");
   };
 
@@ -371,12 +374,12 @@ export default function AdminDashboard() {
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-3 sm:space-y-0">
             <div>
               <h1 className="text-xl sm:text-2xl font-bold text-gray-900">
-                Admin Dashboard
+                Admin Dashboard BPBD
               </h1>
               <p className="text-sm sm:text-base text-gray-600 mt-1">
                 {loading
                   ? "Memuat data pengajuan..."
-                  : "Kelola pengajuan layanan masyarakat"}
+                  : "Kelola pengajuan layanan masyarakat BPBD"}
               </p>
             </div>
             <div className="flex items-center space-x-2 sm:space-x-4">
@@ -534,7 +537,7 @@ export default function AdminDashboard() {
                   </div>
                 )}
                 <div className="text-sm sm:text-base text-gray-600">
-                  Total Pengajuan
+                  Total Nu Di Ajukeun
                 </div>
               </div>
             </Card>
@@ -574,7 +577,7 @@ export default function AdminDashboard() {
                   </div>
                 )}
                 <div className="text-sm sm:text-base text-gray-600">
-                  Pengajuan Baru
+                  Pangajuan Anyar
                 </div>
               </div>
             </Card>
@@ -611,7 +614,7 @@ export default function AdminDashboard() {
                   </div>
                 )}
                 <div className="text-sm sm:text-base text-gray-600">
-                  Sedang Diproses
+                  Keur Di Proses
                 </div>
               </div>
             </Card>
@@ -648,7 +651,7 @@ export default function AdminDashboard() {
                   </div>
                 )}
                 <div className="text-sm sm:text-base text-gray-600">
-                  Selesai
+                  Geus beress!!!
                 </div>
               </div>
             </Card>

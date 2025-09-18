@@ -1,5 +1,12 @@
 import { NextResponse } from "next/server";
 import { Submission, initializeDatabase } from "@/lib/sequelize";
+import { getBearerToken, verifyJwt } from "@/lib/auth";
+
+// Opt out of static rendering and caching for this route
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+export const fetchCache = "force-no-store";
+export const runtime = "nodejs";
 
 // Initialize database on first request
 let dbInitialized = false;
@@ -14,15 +21,27 @@ export async function GET(request) {
   try {
     await initDB();
 
-    // In a real application, you would verify admin authentication here
-    // For workshop purposes, we'll skip authentication
+    // Verify admin authentication using JWT
+    const token = getBearerToken(request);
+    const claims = token ? verifyJwt(token) : null;
+    if (!claims) {
+      return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
+    }
 
-    // Parse cache-busting query parameters
-    const url = new URL(request.url);
-    const queryTimestamp = url.searchParams.get("t");
-    const queryRandom = url.searchParams.get("r");
-    const queryForce = url.searchParams.get("force");
-    const queryCacheBuster = url.searchParams.get("cb");
+    // Avoid using request.url during static analysis. Safely parse only at runtime.
+    let queryTimestamp = null;
+    let queryRandom = null;
+    let queryForce = null;
+    let queryCacheBuster = null;
+    try {
+      const url = new URL(request.url);
+      queryTimestamp = url.searchParams.get("t");
+      queryRandom = url.searchParams.get("r");
+      queryForce = url.searchParams.get("force");
+      queryCacheBuster = url.searchParams.get("cb");
+    } catch (_) {
+      // Ignore parsing issues; proceed without query params
+    }
 
     // Force fresh data dengan multiple strategies
     const timestamp = Date.now();

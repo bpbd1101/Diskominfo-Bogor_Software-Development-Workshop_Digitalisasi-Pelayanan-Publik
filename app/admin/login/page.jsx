@@ -41,26 +41,27 @@ export default function AdminLogin() {
     setErrors({}); // Clear previous errors
 
     try {
-      // Simulate network delay for better UX
-      await new Promise(resolve => setTimeout(resolve, 500));
-      
-      // Simple authentication for workshop - in production use proper auth
-      if (formData.username === "admin" && formData.password === "admin123") {
-        // Set session (in production use proper session management)
-        localStorage.setItem("adminLoggedIn", "true");
-        console.log("Login successful, localStorage set"); // Debug log
-        
-        // Show success message
-        message.success("Login berhasil! Mengalihkan ke dashboard...");
-        
-        // Small delay to show the success message
-        setTimeout(() => {
-          router.push("/admin");
-        }, 1000);
-      } else {
-        setErrors({ submit: "Username atau password salah" });
-        setIsSubmitting(false); // Reset loading state on error
+      const res = await fetch("/api/admin/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(formData),
+      });
+
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({ message: "Gagal login" }));
+        setErrors({ submit: data.message || "Gagal login" });
+        setIsSubmitting(false);
+        return;
       }
+
+      const data = await res.json();
+      localStorage.setItem("adminToken", data.token);
+      localStorage.setItem("adminProfile", JSON.stringify(data.admin));
+
+      message.success("Login berhasil! Mengalihkan ke dashboard...");
+      setTimeout(() => {
+        router.push("/admin");
+      }, 600);
     } catch (error) {
       console.error("Login error:", error);
       setErrors({ submit: "Terjadi kesalahan" });
@@ -73,7 +74,7 @@ export default function AdminLogin() {
       <div className="max-w-md w-full bg-white rounded-2xl shadow-xl p-8">
         <div className="text-center mb-8">
           <h1 className="text-3xl font-bold text-gray-800 mb-2">
-            Admin Login
+            Login Admin BPBD
           </h1>
           <p className="text-gray-600">
             Masuk ke panel administrasi
@@ -153,11 +154,7 @@ export default function AdminLogin() {
           </a>
         </div>
 
-        <div className="mt-8 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
-          <p className="text-sm text-yellow-800">
-            <strong>Workshop Demo:</strong> Username: admin, Password: admin123
-          </p>
-        </div>
+        
       </div>
     </div>
   );

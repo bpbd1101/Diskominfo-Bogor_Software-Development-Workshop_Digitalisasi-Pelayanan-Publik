@@ -4,6 +4,7 @@ import {
   NotificationLog,
   initializeDatabase,
 } from "@/lib/sequelize";
+import { getBearerToken, verifyJwt } from "@/lib/auth";
 import { sendStatusUpdateNotification } from "@/lib/notify/sicuba";
 import { sendStatusUpdateEmail } from "@/lib/notify/email";
 
@@ -38,6 +39,13 @@ export async function PATCH(request, { params }) {
 
   try {
     await initDB();
+
+    // Verify admin authentication using JWT
+    const token = getBearerToken(request);
+    const claims = token ? verifyJwt(token) : null;
+    if (!claims) {
+      return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
+    }
 
     const { id } = params;
     const body = await request.json();
