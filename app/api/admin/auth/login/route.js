@@ -42,7 +42,7 @@ export async function POST(request) {
       );
     }
 
-    const match = await bcrypt.compare(password, admin.password_hash);
+    const match = await bcrypt.compare(password, admin.password);
     if (!match) {
       return NextResponse.json(
         { message: "Kredensial tidak valid" },
