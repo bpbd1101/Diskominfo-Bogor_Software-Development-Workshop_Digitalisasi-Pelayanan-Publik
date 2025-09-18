@@ -53,7 +53,6 @@ export async function POST(request) {
     const token = auth.signJwt({
       sub: admin.id,
       username: admin.username,
-      role: admin.role,
     });
 
     const response = NextResponse.json({
@@ -61,7 +60,6 @@ export async function POST(request) {
       admin: {
         id: admin.id,
         username: admin.username,
-        role: admin.role,
       },
     });
 
