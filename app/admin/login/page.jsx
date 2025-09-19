@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { message } from "antd";
 
@@ -9,9 +9,26 @@ export default function AdminLogin() {
   const [formData, setFormData] = useState({
     username: "",
     password: "",
+    captcha: "",
   });
   const [errors, setErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [captchaCode, setCaptchaCode] = useState("");
+
+  // Generate 4-character captcha
+  const generateCaptcha = () => {
+    const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+    let result = "";
+    for (let i = 0; i < 4; i++) {
+      result += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    setCaptchaCode(result);
+  };
+
+  // Generate captcha on component mount
+  useEffect(() => {
+    generateCaptcha();
+  }, []);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -27,8 +44,15 @@ export default function AdminLogin() {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    if (!formData.username || !formData.password) {
-      setErrors({ submit: "Username dan password wajib diisi" });
+    if (!formData.username || !formData.password || !formData.captcha) {
+      setErrors({ submit: "Username, password, dan captcha wajib diisi" });
+      return;
+    }
+
+    if (formData.captcha.toUpperCase() !== captchaCode) {
+      setErrors({ submit: "Captcha tidak sesuai" });
+      generateCaptcha(); // Generate new captcha
+      setFormData(prev => ({ ...prev, captcha: "" })); // Clear captcha input
       return;
     }
 
@@ -117,6 +141,44 @@ export default function AdminLogin() {
               className="w-full px-3 py-2 border border-gray-300 rounded-lg text-black transition duration-200 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
               placeholder="Masukkan password"
             />
+          </div>
+
+          <div>
+            <label
+              htmlFor="captcha"
+              className="block text-sm font-medium text-gray-700 mb-2"
+            >
+              Captcha
+            </label>
+            <div className="flex items-center space-x-3">
+              <div className="flex-1">
+                <input
+                  type="text"
+                  id="captcha"
+                  name="captcha"
+                  value={formData.captcha}
+                  onChange={handleChange}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-black transition duration-200 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  placeholder="Masukkan captcha"
+                  maxLength="4"
+                />
+              </div>
+              <div className="flex items-center space-x-2">
+                <div className="bg-gray-100 border border-gray-300 rounded-lg px-4 py-2 font-mono text-lg font-bold text-gray-800 select-none">
+                  {captchaCode}
+                </div>
+                <button
+                  type="button"
+                  onClick={generateCaptcha}
+                  className="px-3 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-lg transition duration-200 flex items-center"
+                  title="Refresh captcha"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                  </svg>
+                </button>
+              </div>
+            </div>
           </div>
 
           {errors.submit && (

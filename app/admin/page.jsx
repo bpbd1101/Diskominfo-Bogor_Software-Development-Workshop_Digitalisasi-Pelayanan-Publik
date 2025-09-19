@@ -22,6 +22,9 @@ export default function AdminDashboard() {
   const [chartData, setChartData] = useState([]);
   const [updatingStatus, setUpdatingStatus] = useState({}); // Track which submission is being updated
   const [refreshing, setRefreshing] = useState(false); // Track refresh loading state
+  const [searchTerm, setSearchTerm] = useState("");
+  const [sortBy, setSortBy] = useState("created_at");
+  const [sortOrder, setSortOrder] = useState("desc");
 
   const COLORS = ["#ffc107", "#1890ff", "#52c41a", "#ff4d4f"];
 
@@ -361,10 +364,49 @@ export default function AdminDashboard() {
     },
   ];
 
-  const filteredSubmissions =
-    statusFilter === "ALL"
-      ? submissions
-      : submissions.filter((sub) => sub.status === statusFilter);
+  // Filter and sort submissions
+  const filteredSubmissions = submissions
+    .filter((sub) => {
+      // Status filter
+      if (statusFilter !== "ALL" && sub.status !== statusFilter) {
+        return false;
+      }
+      
+      // Search filter
+      if (searchTerm) {
+        const searchLower = searchTerm.toLowerCase();
+        return (
+          sub.tracking_code?.toLowerCase().includes(searchLower) ||
+          sub.nama?.toLowerCase().includes(searchLower) ||
+          sub.jenis_layanan?.toLowerCase().includes(searchLower) ||
+          sub.status?.toLowerCase().includes(searchLower)
+        );
+      }
+      
+      return true;
+    })
+    .sort((a, b) => {
+      let aValue = a[sortBy];
+      let bValue = b[sortBy];
+      
+      // Handle date sorting
+      if (sortBy === "created_at" || sortBy === "updated_at") {
+        aValue = new Date(aValue);
+        bValue = new Date(bValue);
+      }
+      
+      // Handle string sorting
+      if (typeof aValue === "string") {
+        aValue = aValue.toLowerCase();
+        bValue = bValue.toLowerCase();
+      }
+      
+      if (sortOrder === "asc") {
+        return aValue > bValue ? 1 : -1;
+      } else {
+        return aValue < bValue ? 1 : -1;
+      }
+    });
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -741,26 +783,112 @@ export default function AdminDashboard() {
 
         {/* Table */}
         <Card title="Daftar Pengajuan">
-          <div className="mb-4">
-            <Select
-              value={statusFilter}
-              onChange={setStatusFilter}
-              style={{ width: "100%", maxWidth: 200 }}
-              placeholder="Filter by status"
-              disabled={loading || Object.values(updatingStatus).some(Boolean)}
-              loading={loading}
-            >
-              <Option value="ALL">Semua Status</Option>
-              <Option value="PENGAJUAN_BARU">Pengajuan Baru</Option>
-              <Option value="DIPROSES">Sedang Diproses</Option>
-              <Option value="SELESAI">Selesai</Option>
-              <Option value="DITOLAK">Ditolak</Option>
-            </Select>
-            {loading && (
-              <span className="ml-2 text-xs sm:text-sm text-gray-500">
-                Memuat data...
-              </span>
-            )}
+          <div className="mb-4 space-y-4">
+            {/* Search and Filter Row */}
+            <div className="flex flex-col sm:flex-row gap-4">
+              {/* Search Input */}
+              <div className="flex-1 flex">
+                <input
+                  type="text"
+                  placeholder="Cari berdasarkan kode tracking, nama, jenis layanan, atau status..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="flex-1 px-3 py-2 border border-gray-300 rounded-l-lg text-black transition duration-200 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  disabled={loading || Object.values(updatingStatus).some(Boolean)}
+                />
+                {searchTerm && (
+                  <button
+                    type="button"
+                    onClick={() => setSearchTerm("")}
+                    className="px-3 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-r-lg transition duration-200 flex items-center"
+                    title="Clear search"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                )}
+              </div>
+              
+              {/* Status Filter */}
+              <div className="sm:w-48">
+                <Select
+                  value={statusFilter}
+                  onChange={setStatusFilter}
+                  style={{ width: "100%" }}
+                  placeholder="Filter by status"
+                  disabled={loading || Object.values(updatingStatus).some(Boolean)}
+                  loading={loading}
+                >
+                  <Option value="ALL">Semua Status</Option>
+                  <Option value="PENGAJUAN_BARU">Pengajuan Baru</Option>
+                  <Option value="DIPROSES">Sedang Diproses</Option>
+                  <Option value="SELESAI">Selesai</Option>
+                  <Option value="DITOLAK">Ditolak</Option>
+                </Select>
+              </div>
+            </div>
+
+            {/* Sort Row */}
+            <div className="flex flex-col sm:flex-row gap-4">
+              {/* Sort By */}
+              <div className="sm:w-48">
+                <Select
+                  value={sortBy}
+                  onChange={setSortBy}
+                  style={{ width: "100%" }}
+                  placeholder="Sort by"
+                  disabled={loading || Object.values(updatingStatus).some(Boolean)}
+                >
+                  <Option value="created_at">Tanggal Dibuat</Option>
+                  <Option value="updated_at">Tanggal Diupdate</Option>
+                  <Option value="nama">Nama</Option>
+                  <Option value="jenis_layanan">Jenis Layanan</Option>
+                  <Option value="status">Status</Option>
+                  <Option value="tracking_code">Kode Tracking</Option>
+                </Select>
+              </div>
+              
+              {/* Sort Order */}
+              <div className="sm:w-32">
+                <Select
+                  value={sortOrder}
+                  onChange={setSortOrder}
+                  style={{ width: "100%" }}
+                  placeholder="Order"
+                  disabled={loading || Object.values(updatingStatus).some(Boolean)}
+                >
+                  <Option value="desc">Terbaru</Option>
+                  <Option value="asc">Terlama</Option>
+                </Select>
+              </div>
+              
+              {/* Results Count and Reset Button */}
+              <div className="flex-1 flex items-center justify-end space-x-4">
+                <span className="text-sm text-gray-600">
+                  {loading ? (
+                    "Memuat data..."
+                  ) : (
+                    `Menampilkan ${filteredSubmissions.length} dari ${submissions.length} pengajuan`
+                  )}
+                </span>
+                {(searchTerm || statusFilter !== "ALL" || sortBy !== "created_at" || sortOrder !== "desc") && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSearchTerm("");
+                      setStatusFilter("ALL");
+                      setSortBy("created_at");
+                      setSortOrder("desc");
+                    }}
+                    className="px-3 py-1 text-sm bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition duration-200"
+                    title="Reset all filters"
+                  >
+                    Reset
+                  </button>
+                )}
+              </div>
+            </div>
           </div>
 
           <div className="relative">
